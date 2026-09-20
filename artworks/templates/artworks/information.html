@@ -1,0 +1,48 @@
+{% extends 'artworks/base.html' %}
+{% block title %}Information | Joseph Bochetto Walsh{% endblock %}
+
+{% block content %}
+<div class="information">
+  <p class="info-menu">
+    <a href="#artist">Artist&rsquo;s Statement</a> &nbsp;&bull;&nbsp;
+    <a href="#biography">Biography</a> &nbsp;&bull;&nbsp;
+    <a href="#cv">CV</a> &nbsp;&bull;&nbsp;
+    <a href="#contact">Contact</a>
+  </p>
+
+  {% if bio.statement %}
+  <section id="artist">
+    <h2>Artist&rsquo;s Statement</h2>
+    {% if bio.statement_image %}<img class="aside" src="{{ bio.statement_image.url }}" alt="Joseph Bochetto Walsh">{% endif %}
+    <div><em>{{ bio.statement|linebreaks }}</em></div>
+    {% if bio.statement_banner %}<img class="banner" src="{{ bio.statement_banner.url }}" alt="" loading="lazy">{% endif %}
+    <a href="#top" class="to-top">Return to top</a>
+  </section>
+  {% endif %}
+
+  {% if bio.content %}
+  <section id="biography">
+    <h2>Biography</h2>
+    {% if bio.biography_image %}<img class="aside" src="{{ bio.biography_image.url }}" alt="" loading="lazy">{% endif %}
+    {{ bio.content|linebreaks }}
+    {% if bio.biography_banner %}<img class="banner" src="{{ bio.biography_banner.url }}" alt="" loading="lazy">{% endif %}
+    <a href="#top" class="to-top">Return to top</a>
+  </section>
+  {% endif %}
+
+  {% if bio.exhibitions %}
+  <section id="cv" class="plain">
+    <h2>Exhibitions</h2>
+    <p>{{ bio.exhibitions|linebreaksbr }}</p>
+  </section>
+  {% endif %}
+
+  <section id="contact" class="plain">
+    <h2>Contact</h2>
+    <p>
+      {% if bio.email %}<a href="mailto:{{ bio.email }}">{{ bio.email }}</a><br>{% endif %}
+      {% if bio.instagram %}instagram: <a href="https://www.instagram.com/{{ bio.instagram }}/" rel="noopener" target="_blank">{{ bio.instagram }}</a>{% endif %}
+    </p>
+  </section>
+</div>
+{% endblock %}

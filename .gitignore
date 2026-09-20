@@ -1,0 +1,26 @@
+# Virtual environment
+.portfolio/
+
+# Static files
+staticfiles/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django
+*.log
+db.sqlite3
+media/
+
+# Environment variables
+.env
+
+# IDE
+.vscode/
+.idea/
+# Local environment and WordPress import cache
+.venv/
+wp_export/
+.DS_Store

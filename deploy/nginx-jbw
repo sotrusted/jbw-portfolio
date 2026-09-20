@@ -1,0 +1,19 @@
+server {
+    listen 80;
+    server_name josephbochettowalsh.com www.josephbochettowalsh.com;
+
+    client_max_body_size 50m;  # full-resolution artwork uploads through the admin
+
+    location /static/ {
+        alias /home/sargent/jbw-portfolio/staticfiles/;
+        expires 30d;
+    }
+
+    location / {
+        proxy_pass http://unix:/tmp/jbw.sock;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}

@@ -1,0 +1,40 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Joseph Bochetto Walsh{% endblock %}</title>
+  <meta name="description" content="{% block description %}Paintings, drawings, mixed media, photography and surface design by Los Angeles artist Joseph Bochetto Walsh.{% endblock %}">
+  {% block meta %}{% endblock %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'artworks/site.css' %}">
+  <script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous" defer></script>
+</head>
+<body>
+  <header class="site-header" id="top">
+    <h1 class="site-name">
+      <a href="{% url 'home' %}"><span>Joseph</span> <span class="dark">Bochetto</span> <span>Walsh</span></a>
+    </h1>
+    <nav>
+      <ul class="main-nav">
+        {% for item in nav_sections %}
+          <li><a href="{% if item.series_count %}{% url 'section' item.slug %}{% else %}{% url 'gallery' item.slug %}{% endif %}"
+                 {% if current_section.pk == item.pk %}class="current" aria-current="true"{% endif %}>{{ item.name }}</a></li>
+        {% endfor %}
+        <li><a href="{% url 'information' %}" {% if request.resolver_match.url_name == 'information' %}class="current" aria-current="page"{% endif %}>Information</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="content {% block content_class %}{% endblock %}">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    Copyright &copy; 2020-{% now "Y" %} by Joseph Bochetto Walsh
+  </footer>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

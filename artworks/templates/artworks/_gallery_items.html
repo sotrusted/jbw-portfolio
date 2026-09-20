@@ -1,0 +1,16 @@
+{% for artwork in page %}
+  <figure class="work">
+    <a class="frame" href="{{ artwork.get_absolute_url }}">
+      <img src="{{ artwork.image_thumb.url }}" alt="{{ artwork.title }}" loading="lazy">
+    </a>
+    <figcaption><a href="{{ artwork.get_absolute_url }}">{{ artwork.title }}</a></figcaption>
+  </figure>
+{% empty %}
+  <p>No artworks yet!</p>
+{% endfor %}
+{% if page.has_next %}
+  <div class="gallery-more"
+       hx-get="{% url 'gallery' category.slug %}?page={{ page.next_page_number }}"
+       hx-trigger="revealed"
+       hx-swap="outerHTML"></div>
+{% endif %}

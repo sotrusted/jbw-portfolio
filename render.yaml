@@ -1,0 +1,20 @@
+# Preview deployment. Images are read straight from the public S3 bucket, so no AWS keys are
+# needed here unless you want to upload through the preview's admin.
+services:
+  - type: web
+    name: jbw-portfolio
+    runtime: python
+    plan: free
+    buildCommand: ./build.sh
+    startCommand: gunicorn portfolio.wsgi:application --workers 2 --timeout 60
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "0"
+      - key: AWS_STORAGE_BUCKET_NAME
+        value: jbw-media-195275646962
+      - key: AWS_S3_REGION_NAME
+        value: us-east-1

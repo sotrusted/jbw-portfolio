@@ -1,0 +1,19 @@
+{% extends 'artworks/base.html' %}
+
+{% block title %}{{ section.name }} | Joseph Bochetto Walsh{% endblock %}
+
+{% block content %}
+<p class="hint">click on image to view series</p>
+<div class="mosaic">
+  {% for tile in tiles %}
+    <div class="tile">
+      <a href="{{ tile.category.get_absolute_url }}">
+        <img src="{{ tile.image_thumb.url }}" alt="" loading="lazy">
+        <span>{{ tile.category.name }}</span>
+      </a>
+    </div>
+  {% empty %}
+    <p>No series yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends 'artworks/base.html' %}
+
+{% block content_class %}narrow{% endblock %}
+
+{% block content %}
+<div class="slideshow">
+  {% for artwork in featured %}
+    <figure class="slide{% if forloop.first %} active{% endif %}">
+      <a href="{{ artwork.get_absolute_url }}">
+        <img src="{{ artwork.image_display.url }}" alt="{{ artwork.title }}" width="{{ artwork.width }}" height="{{ artwork.height }}"
+             {% if forloop.first %}fetchpriority="high"{% else %}loading="lazy"{% endif %}>
+      </a>
+      <figcaption><a href="{{ artwork.get_absolute_url }}">{{ artwork.title }}</a></figcaption>
+    </figure>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    var slides = document.querySelectorAll('.slide');
+    if (slides.length < 2) return;
+    var current = 0;
+    setInterval(function () {
+      slides[current].classList.remove('active');
+      current = (current + 1) % slides.length;
+      slides[current].classList.add('active');
+    }, 6000);
+  })();
+</script>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends 'artworks/base.html' %}
+
+{% block title %}{{ category.name }} | Joseph Bochetto Walsh{% endblock %}
+
+{% block content %}
+<div class="gallery {{ category.layout }}">
+  <h2 class="page-title">
+    {% if category.parent %}<a class="back" href="{{ category.parent.get_absolute_url }}" aria-label="Back to {{ category.parent.name }}">&lt;</a><br>{% endif %}
+    {{ category.name }}
+  </h2>
+  <div class="gallery-grid {{ category.layout }}">
+    {% include 'artworks/_gallery_items.html' %}
+  </div>
+</div>
+{% endblock %}

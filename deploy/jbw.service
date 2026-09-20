@@ -1,0 +1,13 @@
+[Unit]
+Description=Joseph Bochetto Walsh website
+After=network.target
+
+[Service]
+User=sargent
+WorkingDirectory=/home/sargent/jbw-portfolio
+ExecStart=/home/sargent/jbw-portfolio/.venv/bin/gunicorn portfolio.wsgi:application --workers 3 --bind unix:/tmp/jbw.sock --timeout 60
+Restart=always
+EnvironmentFile=/home/sargent/jbw-portfolio/.env
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,80 @@
+{% extends 'artworks/base.html' %}
+{% load static %}
+{% block title %}{{ artwork.title }} | Joseph Bochetto Walsh{% endblock %}
+{% block description %}{{ artwork.title }}{% if artwork.medium %}, {{ artwork.medium }}{% endif %}{% if artwork.dimensions %}, {{ artwork.dimensions }}{% endif %}, by Joseph Bochetto Walsh.{% endblock %}
+{% block meta %}<meta property="og:image" content="{{ share_image }}">{% endblock %}
+
+{% block content %}
+<div class="single">
+  <div class="work-nav">
+    {% if next_artwork %}<a href="{% url 'artwork_detail' next_artwork %}" rel="next" aria-label="Next work">&gt;</a>{% else %}<span class="none">&gt;</span>{% endif %}
+    <span class="dash">&mdash;</span>
+    {% if prev_artwork %}<a href="{% url 'artwork_detail' prev_artwork %}" rel="prev" aria-label="Previous work">&lt;</a>{% else %}<span class="none">&lt;</span>{% endif %}
+  </div>
+
+  {% if artwork.category %}
+    <a class="back" href="{{ artwork.category.get_absolute_url }}" aria-label="Back to {{ artwork.category.name }}">&lt;</a>
+  {% else %}
+    <a class="back" href="{% url 'home' %}" aria-label="Back to home">&lt;</a>
+  {% endif %}
+
+  <div class="single-body">
+    <div class="info-box">
+      <h2 class="info-title">{{ artwork.title }}</h2>
+      <h3 class="info-description">
+        {% if artwork.medium %}{{ artwork.medium }}<br>{% endif %}
+        {% if artwork.dimensions %}{{ artwork.dimensions }}<br>{% endif %}
+        {% if artwork.price %}{{ artwork.price }}{% endif %}
+      </h3>
+      {% if artwork.description %}<div class="info-description">{{ artwork.description|linebreaks }}</div>{% endif %}
+      {% if artwork.wall_view %}
+        <button type="button" class="wall-link" data-open="wall-view">view on wall</button>
+      {% endif %}
+    </div>
+    <div class="image-box">
+      <button type="button" data-open="lightbox" aria-label="View full size">
+        <img src="{{ artwork.image_display.url }}" alt="{{ artwork.title }}" width="{{ artwork.width }}" height="{{ artwork.height }}">
+      </button>
+    </div>
+  </div>
+</div>
+
+<dialog id="lightbox" class="lightbox">
+  <button type="button" class="close" aria-label="Close">&times;</button>
+  <img src="{{ artwork.image.url }}" alt="{{ artwork.title }}" loading="lazy">
+</dialog>
+
+{% if artwork.wall_view %}
+<dialog id="wall-view">
+  <button type="button" class="close" aria-label="Close">&times;</button>
+  <div class="wall" style="background-image: url('{% if artwork.wall_view == 'small' %}{% static 'artworks/wall-small.jpg' %}{% else %}{% static 'artworks/wall-large.jpg' %}{% endif %}')">
+    <img src="{{ artwork.image_thumb.url }}" alt="{{ artwork.title }} shown on a wall"
+         style="width: {{ artwork.wall_width|stringformat:'s' }}%; left: {{ artwork.wall_left|stringformat:'s' }}%; top: {{ artwork.wall_top|stringformat:'s' }}%;">
+  </div>
+</dialog>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.querySelectorAll('[data-open]').forEach(function (trigger) {
+    trigger.addEventListener('click', function () {
+      document.getElementById(trigger.dataset.open).showModal();
+    });
+  });
+  document.querySelectorAll('dialog').forEach(function (dialog) {
+    dialog.addEventListener('click', function (event) {
+      if (event.target === dialog || event.target.closest('.close') || event.target.matches('.lightbox img')) dialog.close();
+    });
+  });
+  // /portfolio/flight/#wall-view opens straight to the wall
+  var linked = location.hash && document.getElementById(location.hash.slice(1));
+  if (linked && linked.showModal) linked.showModal();
+  document.addEventListener('keydown', function (event) {
+    if (document.querySelector('dialog[open]')) return;
+    var rel = event.key === 'ArrowRight' ? 'next' : event.key === 'ArrowLeft' ? 'prev' : null;
+    var link = rel && document.querySelector('.work-nav a[rel="' + rel + '"]');
+    if (link) link.click();
+  });
+</script>
+{% endblock %}
