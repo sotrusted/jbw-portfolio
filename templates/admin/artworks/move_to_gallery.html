@@ -1,0 +1,38 @@
+{% extends "admin/base_site.html" %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Home</a>
+  &rsaquo; <a href="{% url 'admin:artworks_artwork_changelist' %}">Artworks</a>
+  &rsaquo; Move to another gallery
+</div>
+{% endblock %}
+
+{% block content %}
+<form method="post">
+  {% csrf_token %}
+  <fieldset class="module aligned">
+    <div class="form-row">
+      <p>Moving {{ artworks|length }} artwork{{ artworks|length|pluralize }}:</p>
+      <ul style="margin:10px 0 0 22px">
+        {% for artwork in artworks|slice:":12" %}<li>{{ artwork.title }}</li>{% endfor %}
+        {% if artworks|length > 12 %}<li>and {{ artworks|length|add:"-12" }} more</li>{% endif %}
+      </ul>
+    </div>
+    <div class="form-row{% if form.category.errors %} errors{% endif %}">
+      {{ form.category.errors }}
+      {{ form.category.label_tag }}
+      {{ form.category }}
+      {% if form.category.help_text %}<div class="help">{{ form.category.help_text }}</div>{% endif %}
+    </div>
+  </fieldset>
+  {% for artwork in artworks %}
+    <input type="hidden" name="{{ action_checkbox_name }}" value="{{ artwork.pk }}">
+  {% endfor %}
+  <input type="hidden" name="action" value="move_to_gallery">
+  <div class="submit-row">
+    <input type="submit" name="apply" value="Move them" class="default">
+    <a href="{% url 'admin:artworks_artwork_changelist' %}" class="button cancel-link">Cancel</a>
+  </div>
+</form>
+{% endblock %}

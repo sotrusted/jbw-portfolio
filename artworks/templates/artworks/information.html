@@ -43,6 +43,27 @@
       {% if bio.email %}<a href="mailto:{{ bio.email }}">{{ bio.email }}</a><br>{% endif %}
       {% if bio.instagram %}instagram: <a href="https://www.instagram.com/{{ bio.instagram }}/" rel="noopener" target="_blank">{{ bio.instagram }}</a>{% endif %}
     </p>
+
+    {% for message in messages %}
+      <p class="sent">{{ message }}</p>
+    {% endfor %}
+
+    <form class="enquiry" method="post" action="{% url 'information' %}#contact">
+      {% csrf_token %}
+      {% if form.non_field_errors %}<p class="field-error">{{ form.non_field_errors.0 }}</p>{% endif %}
+      {% for field in form.visible_fields %}
+        {% if field.name == 'website' %}
+          <div class="leave-empty" aria-hidden="true">{{ field.label_tag }}{{ field }}</div>
+        {% else %}
+          <p class="field">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<span class="field-error">{{ field.errors.0 }}</span>{% endif %}
+          </p>
+        {% endif %}
+      {% endfor %}
+      <button type="submit">Send</button>
+    </form>
   </section>
 </div>
 {% endblock %}

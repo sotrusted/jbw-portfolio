@@ -86,7 +86,7 @@ class Artwork(models.Model):
     category = models.ForeignKey(Category, null=True, blank=True, on_delete=models.SET_NULL, related_name='artworks')
     created_at = models.DateTimeField(auto_now_add=True)
     is_featured = models.BooleanField(default=False, help_text='Show in the home page slideshow.')
-    wall_view = models.CharField('"View on wall"', max_length=5, choices=WALL_CHOICES, blank=True, default=WALL_NONE)
+    wall_view = models.CharField('"View on wall"', max_length=5, choices=WALL_CHOICES, blank=True, default=WALL_LARGE)
     # Placement of the work on the wall photo, as percentages of the photo's width / height.
     wall_width = models.DecimalField(max_digits=5, decimal_places=2, default=24,
                                      help_text='Width of the work, as % of the wall photo width.')
@@ -170,3 +170,21 @@ class Bio(models.Model):
 
     def __str__(self):
         return 'Information page'
+
+
+class ContactMessage(models.Model):
+    """An enquiry from the website. Kept here as well as emailed, so nothing is ever lost."""
+    name = models.CharField(max_length=120)
+    email = models.EmailField()
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    emailed = models.BooleanField(default=False)
+    handled = models.BooleanField('replied to', default=False)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'enquiry'
+        verbose_name_plural = 'enquiries'
+
+    def __str__(self):
+        return f'{self.name} <{self.email}>'

@@ -1,7 +1,11 @@
 import shutil
 import tempfile
+from unittest.mock import patch
 from io import BytesIO
 
+from django.contrib.admin import helpers
+from django.core import mail
+from django.core.cache import cache
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
@@ -9,7 +13,7 @@ from django.urls import reverse
 from PIL import Image
 
 from .management.commands.import_wordpress import Command
-from .models import Artwork, Bio, Category, SeriesTile
+from .models import Artwork, Bio, Category, ContactMessage, SeriesTile
 
 MEDIA_ROOT = tempfile.mkdtemp()
 
@@ -66,11 +70,11 @@ class SiteTests(TestCase):
         self.assertContains(response, '$900')
         self.assertEqual(response.context['prev_artwork'], 'pelagic-3')
         self.assertEqual(response.context['next_artwork'], 'pelagic-1')
-        self.assertNotContains(response, 'view on wall')
 
-    def test_view_on_wall_only_when_enabled(self):
-        Artwork.objects.filter(slug='pelagic-2').update(wall_view=Artwork.WALL_LARGE)
+    def test_view_on_wall_is_offered_by_default_and_can_be_turned_off(self):
         self.assertContains(self.client.get('/portfolio/pelagic-2/'), 'view on wall')
+        Artwork.objects.filter(slug='pelagic-2').update(wall_view=Artwork.WALL_NONE)
+        self.assertNotContains(self.client.get('/portfolio/pelagic-2/'), 'view on wall')
 
     def test_old_wordpress_addresses_redirect(self):
         for old, new in (('/pelagic-3/', '/pelagic/'), ('/paintings/', '/category/paintings/'),
@@ -151,10 +155,39 @@ class AdminTests(TestCase):
         self.assertContains(response, 'artworks/wall-picker.js')
         self.assertContains(response, 'artworks/admin.css')
 
-    def test_add_page_explains_the_preview_is_not_ready_yet(self):
+    def test_add_page_hides_preview_and_picker_until_there_is_a_picture(self):
         response = self.client.get('/admin/artworks/artwork/add/')
-        self.assertContains(response, 'Choose a picture below')
+        self.assertNotContains(response, 'big-preview')
         self.assertNotContains(response, 'wall-stage')
+        self.assertNotContains(response, 'Picture now')
+        # the room is still offered, and defaults to the wide room
+        self.assertContains(response, 'id_wall_view')
+        self.assertEqual(response.context['adminform'].form['wall_view'].initial, Artwork.WALL_LARGE)
+
+    def test_new_artworks_offer_view_on_wall_by_default(self):
+        self.assertEqual(Artwork().wall_view, Artwork.WALL_LARGE)
+
+    def test_move_selected_artworks_to_another_gallery(self):
+        other = Category.objects.create(name='garden', slug='garden', parent=self.section)
+        post = {'action': 'move_to_gallery', helpers.ACTION_CHECKBOX_NAME: [self.artwork.pk]}
+        confirm = self.client.post('/admin/artworks/artwork/', post)
+        self.assertContains(confirm, 'Move to another gallery')
+        self.client.post('/admin/artworks/artwork/', {**post, 'apply': '1', 'category': other.pk}, follow=True)
+        self.artwork.refresh_from_db()
+        self.assertEqual(self.artwork.category, other)
+
+    def test_front_page_actions(self):
+        post = {helpers.ACTION_CHECKBOX_NAME: [self.artwork.pk]}
+        self.client.post('/admin/artworks/artwork/', {**post, 'action': 'show_on_front_page'}, follow=True)
+        self.assertTrue(Artwork.objects.get(pk=self.artwork.pk).is_featured)
+        self.client.post('/admin/artworks/artwork/', {**post, 'action': 'remove_from_front_page'}, follow=True)
+        self.assertFalse(Artwork.objects.get(pk=self.artwork.pk).is_featured)
+
+    def test_metadata_is_editable_straight_from_the_list(self):
+        response = self.client.get('/admin/artworks/artwork/')
+        self.assertContains(response, 'name="form-0-price"')
+        self.assertContains(response, 'name="form-0-dimensions"')
+        self.assertContains(response, 'name="form-0-medium"')
 
     def test_bulk_upload_creates_one_artwork_per_file(self):
         response = self.client.post('/admin/artworks/artwork/bulk-upload/', {
@@ -189,3 +222,70 @@ class AdminTests(TestCase):
     def test_filename_becomes_a_readable_title(self):
         from .admin import ArtworkAdmin
         self.assertEqual(ArtworkAdmin.title_from_filename('Red-Garden_4.final.JPG'), 'red garden 4 final')
+
+
+@override_settings(MEDIA_ROOT=MEDIA_ROOT, CONTACT_TO_EMAIL='',
+                   EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+class ContactFormTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        mail.outbox.clear()
+        Bio.objects.create(content='hello', email='bochettowalsh@example.com')
+
+    def send(self, **overrides):
+        data = {'name': 'A Collector', 'email': 'collector@example.com',
+                'message': 'Is red pelagic still available?', 'website': ''}
+        return self.client.post('/information/', {**data, **overrides}, follow=True)
+
+    def test_form_appears_in_the_contact_section(self):
+        response = self.client.get('/information/')
+        self.assertContains(response, 'class="enquiry"')
+        self.assertContains(response, 'name="message"')
+
+    def test_message_is_stored_and_emailed_to_the_information_page_address(self):
+        response = self.send()
+        self.assertContains(response, 'your message has been sent')
+        enquiry = ContactMessage.objects.get()
+        self.assertEqual((enquiry.name, enquiry.email), ('A Collector', 'collector@example.com'))
+        self.assertTrue(enquiry.emailed)
+        sent = mail.outbox[0]
+        self.assertEqual(sent.to, ['bochettowalsh@example.com'])
+        self.assertEqual(sent.reply_to, ['collector@example.com'])
+        self.assertIn('red pelagic', sent.body)
+
+    def test_explicit_recipient_setting_wins(self):
+        with override_settings(CONTACT_TO_EMAIL='studio@example.com'):
+            self.send()
+        self.assertEqual(mail.outbox[0].to, ['studio@example.com'])
+
+    def test_bad_address_is_rejected_and_nothing_is_sent(self):
+        response = self.send(email='not-an-address')
+        self.assertContains(response, 'valid email')
+        self.assertFalse(ContactMessage.objects.exists())
+        self.assertEqual(mail.outbox, [])
+
+    def test_honeypot_submission_is_silently_dropped(self):
+        response = self.send(website='http://spam.example')
+        self.assertContains(response, 'your message has been sent')
+        self.assertFalse(ContactMessage.objects.exists())
+        self.assertEqual(mail.outbox, [])
+
+    def test_repeated_submissions_are_throttled(self):
+        for _ in range(5):
+            self.send()
+        response = self.send()
+        self.assertContains(response, 'already sent a message')
+        self.assertEqual(ContactMessage.objects.count(), 5)
+
+    def test_a_delivery_failure_still_keeps_the_message(self):
+        with patch('artworks.mail.EmailMessage.send', side_effect=OSError('smtp refused')):
+            response = self.send()
+        self.assertContains(response, 'your message has been sent')  # never show the visitor a failure
+        enquiry = ContactMessage.objects.get()
+        self.assertFalse(enquiry.emailed)  # flagged so it can be found in the admin
+
+    def test_no_recipient_configured_does_not_break_the_page(self):
+        Bio.objects.update(email='')
+        response = self.send()
+        self.assertContains(response, 'your message has been sent')
+        self.assertFalse(ContactMessage.objects.get().emailed)

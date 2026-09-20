@@ -2,19 +2,16 @@
 from django import forms
 from django.core.exceptions import ValidationError
 
-from .models import Artwork, Bio, Category
+from .models import Artwork, Bio, Category, ContactMessage
 
 HELP = {
-    'title': 'Shown under the picture, e.g. <em>red pelagic</em>. Lowercase is fine.',
-    'image': 'Upload the largest version you have. The site makes its own smaller copies '
-             'automatically, so you never need to resize anything first.',
-    'category': 'Which gallery this belongs in. Leave empty to keep it off the site for now.',
-    'is_featured': 'Ticked works take turns on the front page.',
-    'medium': 'Materials, e.g. <em>ink, pigment, oil on cardboard</em>.',
-    'dimensions': 'Height then width, e.g. <em>13" x 16"</em>.',
-    'price': 'Anything you like: <em>$750</em>, <em>sold</em>, or <em>contact for licensing and print</em>. '
-             'Leave empty to show no price.',
-    'description': 'Optional. A few sentences shown under the details.',
+    'image': 'Any size. Smaller copies are made for you.',
+    'category': 'Which gallery this belongs in.',
+    'medium': 'e.g. ink, pigment, oil on cardboard',
+    'dimensions': 'Height then width, e.g. 13" x 16"',
+    'price': 'e.g. $750, sold, or contact for licensing and print',
+    'description': 'Optional.',
+    'is_featured': '',   # the label already says it
 }
 
 
@@ -49,11 +46,8 @@ class CategoryAdminForm(forms.ModelForm):
         fields = '__all__'
         labels = {'parent': 'Part of', 'layout': 'How the pictures are arranged'}
         help_texts = {
-            'name': 'Shown as the gallery heading, e.g. <em>pelagic</em>.',
-            'slug': 'The web address, e.g. <em>pelagic</em> gives josephbochettowalsh.com/pelagic/. '
-                    'Changing this breaks any link people already have.',
-            'parent': 'Leave empty for a menu heading (Paintings, Drawings...). '
-                      'Otherwise pick the menu heading this series sits under.',
+            'slug': 'The web address. Changing it breaks links people already have.',
+            'parent': 'Leave empty for a menu heading of its own.',
             'order': 'Smaller numbers come first.',
         }
 
@@ -69,7 +63,7 @@ class BioAdminForm(forms.ModelForm):
         help_texts = {
             'statement': 'Leave a blank line between paragraphs.',
             'content': 'Leave a blank line between paragraphs.',
-            'exhibitions': 'One per line, e.g. <em>2016 Paintings, Sedi Studios, Los Angeles</em>.',
+            'exhibitions': 'One per line.',
             'instagram': 'Just the handle, without the @.',
         }
 
@@ -98,11 +92,38 @@ class BulkUploadForm(forms.Form):
     """Add a batch of pictures at once; details can be filled in afterwards."""
     images = MultipleFileField(
         label='Pictures',
-        help_text='Choose as many as you like. Each becomes its own artwork, named after its file.')
+        help_text='Each becomes its own artwork, named after its file.')
     category = forms.ModelChoiceField(
         queryset=Category.objects.select_related('parent').order_by('parent__order', 'order', 'name'),
-        required=False, label='Gallery', help_text='Put them all in this gallery.')
+        required=False, label='Gallery')
     medium = forms.CharField(max_length=200, required=False, label='Materials',
-                             help_text='Optional. Applied to every picture in this batch.')
-    price = forms.CharField(max_length=100, required=False, label='Price',
-                            help_text='Optional. Applied to every picture in this batch.')
+                             help_text='Applied to every picture in this batch.')
+    price = forms.CharField(max_length=100, required=False, label='Price')
+
+
+class MoveToGalleryForm(forms.Form):
+    """Used by the "move to another gallery" bulk action."""
+    category = forms.ModelChoiceField(
+        queryset=Category.objects.select_related('parent').order_by('parent__order', 'order', 'name'),
+        required=False, label='Move them to', help_text='Leave empty to take them off the site.')
+
+
+class ContactForm(forms.ModelForm):
+    """The enquiry form on the Information page."""
+    # Bots fill in every field they find; people never see this one.
+    website = forms.CharField(required=False, widget=forms.TextInput(
+        attrs={'tabindex': '-1', 'autocomplete': 'off', 'aria-hidden': 'true'}))
+
+    class Meta:
+        model = ContactMessage
+        fields = ('name', 'email', 'message')
+        labels = {'name': 'Your name', 'email': 'Your email', 'message': 'Message'}
+        widgets = {
+            'name': forms.TextInput(attrs={'autocomplete': 'name'}),
+            'email': forms.EmailInput(attrs={'autocomplete': 'email'}),
+            'message': forms.Textarea(attrs={'rows': 6}),
+        }
+
+    @property
+    def looks_automated(self):
+        return bool(self.cleaned_data.get('website'))

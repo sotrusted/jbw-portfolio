@@ -1,12 +1,19 @@
 import re
 
+from django.contrib import messages
+from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
+from .forms import ContactForm
+from .mail import send_enquiry
 from .models import Artwork, Bio, Category, SeriesTile
 
 GALLERY_PAGE_SIZE = 30
+ENQUIRY_LIMIT = 5          # per address below, per hour
+ENQUIRY_LIMIT_WINDOW = 3600
 
 
 def home(request):
@@ -16,7 +23,32 @@ def home(request):
 
 def information(request):
     bio = Bio.objects.first()
-    return render(request, 'artworks/information.html', {'bio': bio})
+    form = ContactForm(request.POST or None)
+    if request.method == 'POST':
+        if _too_many_enquiries(request):
+            form.add_error(None, 'Thank you — you have already sent a message. '
+                                 'Please email directly if it is urgent.')
+        elif form.is_valid():
+            if not form.looks_automated:
+                enquiry = form.save()
+                enquiry.emailed = send_enquiry(enquiry)
+                enquiry.save(update_fields=['emailed'])
+            messages.success(request, 'Thank you — your message has been sent.')
+            return redirect(f"{reverse('information')}#contact")
+    return render(request, 'artworks/information.html', {'bio': bio, 'form': form})
+
+
+def _too_many_enquiries(request):
+    """A light brake on repeated submissions from one address."""
+    address = request.META.get('REMOTE_ADDR', '')
+    if not address:
+        return False
+    key = f'enquiries:{address}'
+    seen = cache.get(key, 0)
+    if seen >= ENQUIRY_LIMIT:
+        return True
+    cache.set(key, seen + 1, ENQUIRY_LIMIT_WINDOW)
+    return False
 
 
 def section(request, slug):

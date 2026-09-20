@@ -170,3 +170,19 @@ if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+
+# Email (Resend SMTP relay, the same account the other sites use).
+# Without a key, messages print to the console instead - which is what local development wants.
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
+EMAIL_BACKEND = ('django.core.mail.backends.smtp.EmailBackend' if RESEND_API_KEY
+                 else 'django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = 'smtp.resend.com'
+EMAIL_PORT = 465
+EMAIL_USE_SSL = True
+EMAIL_HOST_USER = 'resend'
+EMAIL_HOST_PASSWORD = RESEND_API_KEY
+# Must be a domain verified in Resend. Switch to josephbochettowalsh.com once it is verified there.
+DEFAULT_FROM_EMAIL = os.environ.get(
+    'CONTACT_FROM_EMAIL', 'Joseph Bochetto Walsh <noreply@spite.fr>')
+# Where enquiries go. Empty means the address on the Information page.
+CONTACT_TO_EMAIL = os.environ.get('CONTACT_TO_EMAIL', '')

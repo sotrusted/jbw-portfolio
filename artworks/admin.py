@@ -3,6 +3,7 @@ from pathlib import PurePath
 
 from adminsortable2.admin import SortableAdminBase, SortableAdminMixin, SortableTabularInline
 from django.contrib import admin, messages
+from django.contrib.admin import helpers
 from django.core.exceptions import PermissionDenied
 from django.db.models import Count
 from django.shortcuts import redirect, render
@@ -12,8 +13,9 @@ from django.urls import path, reverse
 from django.utils.html import format_html
 from django.utils.text import Truncator
 
-from .forms import ArtworkAdminForm, BioAdminForm, BulkUploadForm, CategoryAdminForm
-from .models import Artwork, Bio, Category, SeriesTile
+from .forms import (ArtworkAdminForm, BioAdminForm, BulkUploadForm, CategoryAdminForm,
+                    MoveToGalleryForm)
+from .models import Artwork, Bio, Category, ContactMessage, SeriesTile
 
 admin.site.site_header = 'Joseph Bochetto Walsh'
 admin.site.site_title = 'Joseph Bochetto Walsh'
@@ -38,8 +40,10 @@ def preview(image, size=70, radius=4):
 @admin.register(Artwork)
 class ArtworkAdmin(SortableAdminMixin, AdminStyle, admin.ModelAdmin):
     form = ArtworkAdminForm
-    list_display = ('thumbnail', 'title', 'category', 'dimensions', 'short_price', 'is_featured')
+    list_display = ('thumbnail', 'title', 'category', 'medium', 'dimensions', 'price', 'is_featured')
     list_display_links = ('thumbnail', 'title')
+    list_editable = ('medium', 'dimensions', 'price', 'is_featured')
+    actions = ['move_to_gallery', 'show_on_front_page', 'remove_from_front_page']
     list_per_page = 100  # the largest gallery is 83 works, so one filtered page holds a whole gallery
     list_filter = ('category', 'is_featured', 'wall_view')
     search_fields = ('title', 'medium', 'category__name')
@@ -47,18 +51,15 @@ class ArtworkAdmin(SortableAdminMixin, AdminStyle, admin.ModelAdmin):
     ordering = ['-order']  # Default to descending order
     save_on_top = True
 
-    @property
-    def fieldsets(self):
+    def get_fieldsets(self, request, obj=None):
+        has_picture = bool(obj and obj.image)
         return (
-            (None, {'fields': ('title', 'big_preview', 'image', 'category', 'is_featured')}),
+            (None, {'fields': (['title'] + (['big_preview'] if has_picture else [])
+                               + ['image', 'category', 'is_featured'])}),
             ('Details shown beside the picture', {'fields': ('medium', 'dimensions', 'price', 'description')}),
-            ('"View on wall"', {
-                'description': 'Lets visitors picture the work hanging in a room.',
-                'fields': ('wall_view', 'wall_picker'),
-            }),
+            ('"View on wall"', {'fields': ['wall_view'] + (['wall_picker'] if has_picture else [])}),
             ('Exact position on the wall', {
                 'classes': ('collapse',),
-                'description': "Set for you when you drag the picture above. You shouldn't need to touch these.",
                 'fields': ('wall_width', 'wall_left', 'wall_top'),
             }),
         )
@@ -72,33 +73,55 @@ class ArtworkAdmin(SortableAdminMixin, AdminStyle, admin.ModelAdmin):
     def thumbnail(self, obj):
         return preview(obj.image_thumb or obj.image)
 
-    @admin.display(description='Price', ordering='price')
-    def short_price(self, obj):
-        """Notes like "contact for licensing and print" would make the row tall."""
-        if not obj.price:
-            return '—'
-        return format_html('<span title="{}">{}</span>', obj.price, Truncator(obj.price).chars(22))
-
     @admin.display(description='Picture now')
     def big_preview(self, obj):
-        if not obj.pk or not obj.image:
-            return format_html('<span class="hint-note">Choose a picture below, then press Save. '
-                               'It appears here once saved.</span>')
+        if not obj or not obj.image:
+            return ''
         return format_html(
             '<a href="{}" target="_blank" rel="noopener"><img src="{}" class="big-preview" alt=""></a>'
-            '<div class="hint-note">{} × {} pixels. Click to see the full size.</div>',
+            '<div class="hint-note">{} × {} pixels</div>',
             obj.image.url, (obj.image_display or obj.image).url, obj.width, obj.height)
 
     @admin.display(description='Position it')
     def wall_picker(self, obj):
-        if not obj.pk or not obj.image_thumb:
-            return format_html('<span class="hint-note">Save the artwork first, then come back here '
-                               'to place it on the wall.</span>')
+        if not obj or not obj.image_thumb:
+            return ''
         return render_to_string('admin/artworks/wall_picker.html', {
             'artwork': obj,
             'wall_small': static('artworks/wall-small.jpg'),
             'wall_large': static('artworks/wall-large.jpg'),
         })
+
+    # -- bulk actions ----------------------------------------------------------------------
+
+    @admin.action(description='Move selected artworks to another gallery\u2026')
+    def move_to_gallery(self, request, queryset):
+        form = MoveToGalleryForm(request.POST if 'apply' in request.POST else None)
+        if 'apply' in request.POST and form.is_valid():
+            category = form.cleaned_data['category']
+            count = queryset.update(category=category)
+            self.message_user(
+                request,
+                f'Moved {count} artworks to {category}.' if category
+                else f'Took {count} artworks off the site (no gallery).',
+                messages.SUCCESS)
+            return None
+        return render(request, 'admin/artworks/move_to_gallery.html', {
+            **self.admin_site.each_context(request),
+            'title': 'Move to another gallery',
+            'artworks': queryset,
+            'form': form,
+            'action_checkbox_name': helpers.ACTION_CHECKBOX_NAME,
+            'opts': self.opts,
+        })
+
+    @admin.action(description='Show selected on the front page')
+    def show_on_front_page(self, request, queryset):
+        self.message_user(request, f'{queryset.update(is_featured=True)} artworks now appear on the front page.')
+
+    @admin.action(description='Remove selected from the front page')
+    def remove_from_front_page(self, request, queryset):
+        self.message_user(request, f'{queryset.update(is_featured=False)} artworks removed from the front page.')
 
     # -- adding several pictures at once ---------------------------------------------------
 
@@ -206,3 +229,22 @@ class BioAdmin(AdminStyle, admin.ModelAdmin):
         if page:
             return redirect('admin:artworks_bio_change', page.pk)
         return redirect('admin:artworks_bio_add')
+
+
+@admin.register(ContactMessage)
+class ContactMessageAdmin(AdminStyle, admin.ModelAdmin):
+    """Enquiries are emailed to Joseph; this is the copy kept in case an email goes astray."""
+    list_display = ('created_at', 'name', 'email', 'summary', 'handled', 'emailed')
+    list_display_links = ('created_at', 'name')
+    list_editable = ('handled',)
+    list_filter = ('handled', 'emailed')
+    search_fields = ('name', 'email', 'message')
+    readonly_fields = ('name', 'email', 'message', 'created_at', 'emailed')
+    fields = ('created_at', 'name', 'email', 'message', 'handled', 'emailed')
+
+    @admin.display(description='Message')
+    def summary(self, obj):
+        return Truncator(obj.message).chars(70)
+
+    def has_add_permission(self, request):
+        return False

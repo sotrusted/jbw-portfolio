@@ -142,3 +142,38 @@ dialog .close { position: fixed; top: 18px; right: 26px; border: 0; background: 
   .information .aside { float: none; width: 80%; margin: 5% auto; }
   .information p { text-align: left; }
 }
+
+/* enquiry form on the information page */
+.enquiry { max-width: 34em; margin-top: 1.5em; }
+.enquiry .field { display: flex; flex-direction: column; margin: 0 0 1.1em; }
+.enquiry label { font-size: .85em; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin-bottom: .4em; }
+.enquiry input, .enquiry textarea {
+  font-family: inherit;
+  font-size: 1em;
+  font-weight: 300;
+  padding: 10px 12px;
+  border: 1px solid #d5d8dd;
+  background: #fff;
+  color: var(--ink);
+  border-radius: 2px;
+}
+.enquiry input:focus, .enquiry textarea:focus { outline: 2px solid var(--name-light); outline-offset: 1px; border-color: var(--name-light); }
+.enquiry textarea { resize: vertical; }
+.enquiry button {
+  font-family: inherit;
+  font-size: .95em;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  padding: 12px 28px;
+  min-height: 44px;
+  color: #fff;
+  background: var(--link);
+  border: 0;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.enquiry button:hover { background: var(--link-hover); }
+.enquiry .leave-empty { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.field-error { color: #a4343a; font-size: .85em; margin-top: .3em; }
+.information .sent { color: var(--link-hover); font-weight: 400; }
