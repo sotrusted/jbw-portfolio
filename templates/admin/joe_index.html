@@ -1,0 +1,33 @@
+{% extends "admin/index.html" %}
+
+{% comment %}Big, plainly-labelled shortcuts above the usual admin list.{% endcomment %}
+
+{% block content %}
+<div class="quick-tasks">
+  <a class="quick-task is-primary" href="{% url 'admin:artworks_artwork_add' %}">
+    <strong>Add an artwork</strong>
+    <span>One picture, with its title, materials, size and price.</span>
+  </a>
+  <a class="quick-task" href="{% url 'admin:artworks_artwork_bulk_upload' %}">
+    <strong>Add several at once</strong>
+    <span>Upload a batch of pictures, then fill in the details.</span>
+  </a>
+  <a class="quick-task" href="{% url 'admin:artworks_artwork_changelist' %}">
+    <strong>All artworks</strong>
+    <span>Edit, reorder by dragging, or remove anything already on the site.</span>
+  </a>
+  <a class="quick-task" href="{% url 'admin:artworks_artwork_changelist' %}?is_featured__exact=1">
+    <strong>Front page pictures</strong>
+    <span>Choose what greets visitors first.</span>
+  </a>
+  <a class="quick-task" href="{% url 'admin:artworks_category_changelist' %}">
+    <strong>Galleries &amp; menu</strong>
+    <span>Series, their cover pictures, and the order of the menu.</span>
+  </a>
+  <a class="quick-task" href="{% url 'admin:artworks_bio_changelist' %}">
+    <strong>Information page</strong>
+    <span>Your statement, biography, exhibitions and contact details.</span>
+  </a>
+</div>
+{{ block.super }}
+{% endblock %}

@@ -1,0 +1,206 @@
+/* Admin styling for Joseph: larger type, roomier controls, previews, and
+   touch targets big enough to use comfortably on a tablet or phone. */
+
+:root {
+  --jbw-ink: #4d5870;
+  --jbw-light: #868ea1;
+  --jbw-link: #496185;
+  --jbw-radius: 8px;
+}
+
+/* --- readability ------------------------------------------------------- */
+
+body, #content, .form-row, td, th, label, p, .help, .helptext, div.breadcrumbs {
+  font-size: 15.5px;
+  line-height: 1.55;
+}
+#content h1 { font-size: 26px; margin-bottom: .6em; }
+.module h2, .module caption { font-size: 15px; letter-spacing: .02em; }
+fieldset.module { border-radius: var(--jbw-radius); margin-bottom: 26px; }
+.form-row { padding: 14px 0; }
+.aligned label { font-weight: 600; font-size: 15px; padding-top: 10px; }
+.help, .helptext, .hint-note {
+  font-size: 14px !important;
+  color: var(--body-quiet-color);
+  max-width: 44em;
+}
+.hint-note { display: block; margin-top: 6px; }
+fieldset .description { font-size: 14.5px; padding: 4px 0 10px; max-width: 44em; }
+
+/* --- inputs and buttons ------------------------------------------------ */
+
+input[type=text], input[type=email], input[type=number], input[type=url],
+input[type=password], select, textarea, .vTextField {
+  font-size: 15.5px;
+  min-height: 42px;
+  padding: 8px 10px;
+  border-radius: 6px;
+}
+textarea { min-height: 150px; line-height: 1.6; }
+select { min-width: 12em; }
+input[type=file] { font-size: 15px; padding: 8px 0; }
+input:focus, select:focus, textarea:focus, button:focus, .button:focus, a:focus {
+  outline: 3px solid var(--jbw-light);
+  outline-offset: 2px;
+}
+.button, input[type=submit], input[type=button], .submit-row input, a.button {
+  font-size: 15px;
+  padding: 11px 18px;
+  border-radius: 6px;
+  min-height: 44px;
+}
+.submit-row { padding: 14px; border-radius: var(--jbw-radius); }
+.submit-row input[name=_save] { font-weight: 700; }
+#changelist-filter a { padding: 7px 10px; display: block; }
+.object-tools a { padding: 9px 15px; font-size: 13px; }
+
+/* checkboxes are easy to miss at the default size */
+input[type=checkbox] { width: 20px; height: 20px; vertical-align: -4px; }
+
+/* --- lists ------------------------------------------------------------- */
+
+#changelist table thead th { font-size: 13.5px; }
+#changelist tbody td, #changelist tbody th { padding: 9px 10px; vertical-align: middle; }
+#result_list img { display: block; }
+.no-image { color: var(--body-quiet-color); font-size: 13px; }
+#changelist-search input[type=text] { min-width: 18em; }
+#result_list td.field-dimensions, #result_list td.field-short_price { white-space: nowrap; }
+
+/* a clear, compact grip instead of the default hatched block */
+#result_list th.column-_reorder_, #result_list td.field-_reorder_ { width: 46px; text-align: center; }
+#result_list div.drag {
+  width: 30px;
+  height: 30px;
+  margin: 0 auto;
+  background: none !important;
+  border: 1px solid var(--hairline-color);
+  border-radius: 6px;
+  opacity: 1 !important;
+}
+#result_list div.drag::before {
+  content: "\283F";
+  display: block;
+  font-size: 15px;
+  line-height: 28px;
+  text-align: center;
+  color: var(--body-quiet-color);
+}
+#result_list div.drag.handle:hover { border-color: var(--jbw-light); }
+.results { overflow-x: auto; }
+
+/* --- previews ---------------------------------------------------------- */
+
+img.big-preview {
+  max-width: min(420px, 100%);
+  max-height: 320px;
+  width: auto;
+  height: auto;
+  border-radius: var(--jbw-radius);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .18);
+}
+
+/* --- dashboard --------------------------------------------------------- */
+
+.quick-tasks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin: 0 0 30px;
+}
+.quick-task {
+  display: block;
+  padding: 20px;
+  border-radius: var(--jbw-radius);
+  background: var(--darkened-bg, #f4f5f7);
+  border: 1px solid var(--hairline-color);
+  text-decoration: none;
+  color: var(--body-fg);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.quick-task:hover, .quick-task:focus {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .14);
+  color: var(--body-fg);
+}
+.quick-task strong { display: block; font-size: 17px; margin-bottom: 5px; color: var(--jbw-link); }
+.quick-task span { font-size: 14px; color: var(--body-quiet-color); }
+.quick-task.is-primary { background: var(--jbw-ink); border-color: var(--jbw-ink); }
+.quick-task.is-primary strong, .quick-task.is-primary span { color: #fff; }
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) .quick-task strong { color: #9db4d2; }
+}
+html[data-theme="dark"] .quick-task strong { color: #9db4d2; }
+
+/* --- the "view on wall" picker ---------------------------------------- */
+
+.wall-picker { max-width: 640px; }
+.wall-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background-size: cover;
+  background-position: center;
+  border-radius: var(--jbw-radius);
+  overflow: hidden;
+  border: 1px solid var(--hairline-color);
+  touch-action: none;
+}
+.wall-art { position: absolute; cursor: grab; touch-action: none; }
+.wall-picker.is-dragging .wall-art { cursor: grabbing; }
+.wall-art img { display: block; width: 100%; height: auto; box-shadow: 2px 3px 8px rgba(0, 0, 0, .3); }
+.wall-handle {
+  position: absolute;
+  right: -9px;
+  bottom: -9px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--jbw-link);
+  cursor: nwse-resize;
+  touch-action: none;
+}
+.wall-tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 12px 0 4px; }
+.wall-btn {
+  font-size: 14.5px;
+  padding: 9px 14px;
+  min-height: 42px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #ccc);
+  background: var(--button-bg, #eee);
+  color: var(--button-fg, #fff);
+  cursor: pointer;
+}
+.wall-btn:hover { background: var(--button-hover-bg, #ddd); }
+.wall-readout { font-size: 14px; color: var(--body-quiet-color); }
+.wall-off { display: none; }
+.wall-picker.is-off .wall-stage,
+.wall-picker.is-off .wall-tools { opacity: .35; pointer-events: none; }
+.wall-picker.is-off .wall-off { display: block; }
+
+/* --- narrow screens ---------------------------------------------------- */
+
+@media (max-width: 767px) {
+  body, #content, .form-row, td, th, label, p { font-size: 16px; }
+  #content h1 { font-size: 22px; }
+  .aligned label { padding-bottom: 4px; }
+  input[type=text], input[type=email], input[type=number], select, textarea, .vTextField {
+    width: 100%;
+    max-width: 100%;
+    min-height: 46px;
+  }
+  .button, input[type=submit], .submit-row input, a.button {
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 8px;
+  }
+  .submit-row { display: flex; flex-direction: column; box-sizing: border-box; }
+  input[type=text], input[type=email], input[type=number], select, textarea, .vTextField {
+    box-sizing: border-box;
+  }
+  /* long file names and urls must not push the page sideways */
+  .form-row p.file-upload, .form-row .help, .form-row a { overflow-wrap: anywhere; }
+  html, body { overflow-x: hidden; }
+  .wall-tools { flex-direction: column; align-items: stretch; }
+  .wall-btn { width: 100%; }
+}

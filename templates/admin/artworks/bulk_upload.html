@@ -1,0 +1,35 @@
+{% extends "admin/base_site.html" %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Home</a>
+  &rsaquo; <a href="{% url 'admin:artworks_artwork_changelist' %}">Artworks</a>
+  &rsaquo; Add several at once
+</div>
+{% endblock %}
+
+{% block content %}
+<p class="help" style="max-width:44em">
+  Choose as many pictures as you like. Each one becomes an artwork named after its file, so
+  <em>red garden 4.jpg</em> arrives titled <em>red garden 4</em>. You can correct the titles and add
+  sizes and prices straight afterwards. Large files are fine.
+</p>
+
+<form method="post" enctype="multipart/form-data" novalidate>
+  {% csrf_token %}
+  <fieldset class="module aligned">
+    {% for field in form %}
+      <div class="form-row{% if field.errors %} errors{% endif %}">
+        {{ field.errors }}
+        {{ field.label_tag }}
+        {{ field }}
+        {% if field.help_text %}<div class="help">{{ field.help_text|safe }}</div>{% endif %}
+      </div>
+    {% endfor %}
+  </fieldset>
+  <div class="submit-row">
+    <input type="submit" value="Upload these pictures" class="default">
+    <a href="{% url 'admin:artworks_artwork_changelist' %}" class="button cancel-link">Cancel</a>
+  </div>
+</form>
+{% endblock %}

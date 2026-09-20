@@ -1,0 +1,25 @@
+{% comment %}
+Visual editor for the "view on wall" placement. Dragging writes percentages into the
+wall_width / wall_left / wall_top inputs, so the numbers never have to be typed.
+{% endcomment %}
+<div class="wall-picker" data-small="{{ wall_small }}" data-large="{{ wall_large }}">
+  <div class="wall-stage" data-wall-stage>
+    <div class="wall-art" data-wall-art>
+      <img src="{{ artwork.image_thumb.url }}" alt="{{ artwork.title }}" draggable="false">
+      <span class="wall-handle" data-wall-handle title="Drag to resize"></span>
+    </div>
+  </div>
+  <div class="wall-tools">
+    <button type="button" class="wall-btn" data-wall-action="smaller">&minus; Smaller</button>
+    <button type="button" class="wall-btn" data-wall-action="bigger">+ Bigger</button>
+    <button type="button" class="wall-btn" data-wall-action="center">Centre it</button>
+    <span class="wall-readout" data-wall-readout></span>
+  </div>
+  <p class="hint-note">
+    Drag the picture to move it. Drag the small square at its bottom-right corner to resize it.
+    Choose which room to use with the setting above.
+  </p>
+  <p class="wall-off hint-note">
+    This artwork does not offer &ldquo;view on wall&rdquo;. Choose a room above to turn it on.
+  </p>
+</div>

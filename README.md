@@ -48,6 +48,22 @@ Known gaps in the source data: six portfolio items have no image on WordPress an
 belong to no category there, so they are imported without one (reachable by address, not shown
 in any gallery).
 
+## The admin, for Joseph
+
+`/admin/` is the whole product from Joseph's side, so it is built for him rather than for a
+developer: plain-language labels and help text, large type and 44px touch targets, previews of
+every picture, and a layout that works on a phone or tablet.
+
+- **Dashboard** — big labelled shortcuts for the six things he actually does.
+- **Add several at once** — upload a batch of pictures; each becomes an artwork named after its
+  file, with a shared gallery, materials and price. Details can be corrected afterwards.
+- **"View on wall"** — drag the work around a photo of a room and drag its corner to resize.
+  The percentages underneath are written for him; he never types a number.
+- **Reordering** — drag the grip in the artworks list. Filter by gallery first: every gallery
+  fits on one page, so a whole series can be reordered without paging.
+- **Newly added works** go to the top of their gallery automatically.
+- **Information page** skips the list and opens straight into the form, since there is only one.
+
 ## Media (S3)
 
 Uploaded images live in the public-read bucket `jbw-media-<aws account>`; pages link to it

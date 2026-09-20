@@ -2,13 +2,14 @@ import shutil
 import tempfile
 from io import BytesIO
 
+from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from PIL import Image
 
 from .management.commands.import_wordpress import Command
-from .models import Artwork, Category, SeriesTile
+from .models import Artwork, Bio, Category, SeriesTile
 
 MEDIA_ROOT = tempfile.mkdtemp()
 
@@ -114,3 +115,77 @@ class ItemPageParsingTests(TestCase):
         page = '<h2 class="info-title">morning 3</h2><h3 class="info-description">contact for licensing and print<br> <br> </h3>'
         fields = Command().parse_item_page(page)['fields']
         self.assertEqual((fields['medium'], fields['price']), ('', 'contact for licensing and print'))
+
+
+@override_settings(MEDIA_ROOT=MEDIA_ROOT)
+class AdminTests(TestCase):
+    """The admin is the product for Joseph, so its pages are covered like any other."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user = User.objects.create_superuser('joseph', 'j@example.com', 'pw-for-tests-only')
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(MEDIA_ROOT, ignore_errors=True)
+        super().tearDownClass()
+
+    def setUp(self):
+        self.client.force_login(self.user)
+        self.section = Category.objects.create(name='Paintings', slug='paintings')
+        self.series = Category.objects.create(name='pelagic', slug='pelagic', parent=self.section)
+        self.artwork = Artwork.objects.create(title='red pelagic', slug='red-pelagic', image=upload(),
+                                              category=self.series, wall_view=Artwork.WALL_LARGE)
+
+    def test_dashboard_offers_the_main_tasks(self):
+        response = self.client.get('/admin/')
+        for label in ('Add an artwork', 'Add several at once', 'Front page pictures',
+                      'Galleries &amp; menu', 'Information page'):
+            self.assertContains(response, label)
+
+    def test_change_page_has_preview_and_wall_picker(self):
+        response = self.client.get(f'/admin/artworks/artwork/{self.artwork.pk}/change/')
+        self.assertContains(response, 'big-preview')
+        self.assertContains(response, 'wall-picker')
+        self.assertContains(response, 'artworks/wall-picker.js')
+        self.assertContains(response, 'artworks/admin.css')
+
+    def test_add_page_explains_the_preview_is_not_ready_yet(self):
+        response = self.client.get('/admin/artworks/artwork/add/')
+        self.assertContains(response, 'Choose a picture below')
+        self.assertNotContains(response, 'wall-stage')
+
+    def test_bulk_upload_creates_one_artwork_per_file(self):
+        response = self.client.post('/admin/artworks/artwork/bulk-upload/', {
+            'images': [upload('red-garden-4.png'), upload('blue_garden_2.png')],
+            'category': self.series.pk, 'medium': 'oil on paper', 'price': '$400',
+        }, follow=True)
+        self.assertContains(response, 'Added 2 artworks')
+        added = Artwork.objects.filter(medium='oil on paper')
+        self.assertEqual(sorted(added.values_list('title', flat=True)), ['blue garden 2', 'red garden 4'])
+        self.assertTrue(all(a.image_thumb and a.category == self.series for a in added))
+
+    def test_bulk_upload_without_files_is_rejected(self):
+        response = self.client.post('/admin/artworks/artwork/bulk-upload/', {'category': self.series.pk})
+        self.assertEqual(Artwork.objects.count(), 1)
+        self.assertContains(response, 'field is required')
+
+    def test_new_artwork_goes_to_the_top_of_its_gallery(self):
+        newest = Artwork.objects.create(title='newest', image=upload(), category=self.series)
+        self.assertGreater(newest.order, self.artwork.order)
+        self.assertEqual(self.client.get('/pelagic/').context['page'][0].slug, newest.slug)
+
+    def test_information_page_skips_the_list_and_opens_the_form(self):
+        bio = Bio.objects.create(content='hello')
+        self.assertRedirects(self.client.get('/admin/artworks/bio/'),
+                             f'/admin/artworks/bio/{bio.pk}/change/')
+
+    def test_category_list_explains_what_each_row_is(self):
+        response = self.client.get('/admin/artworks/category/')
+        self.assertContains(response, 'series inside Paintings')
+        self.assertContains(response, 'see the page')
+
+    def test_filename_becomes_a_readable_title(self):
+        from .admin import ArtworkAdmin
+        self.assertEqual(ArtworkAdmin.title_from_filename('Red-Garden_4.final.JPG'), 'red garden 4 final')

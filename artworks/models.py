@@ -106,6 +106,9 @@ class Artwork(models.Model):
         if not self.slug:
             prefix = self.category.name if self.category_id else 'work'
             self.slug = slugify(f"{prefix}-{self.title}-{str(uuid.uuid4())[:8]}")
+        if not self.pk and not self.order:
+            # a newly added work goes to the top of its gallery, which sorts by -order
+            self.order = (type(self).objects.aggregate(models.Max('order'))['order__max'] or 0) + 1
         if self.image and (self._image_changed() or not self.image_thumb):
             self._build_renditions()
         super().save(*args, **kwargs)
