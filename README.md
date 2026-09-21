@@ -112,8 +112,11 @@ set -a; . ./.env; set +a
 sudo bash deploy/install.sh     # systemd unit + nginx site; reloads nginx only if `nginx -t` passes
 ```
 
-Updating: `git pull && .venv/bin/pip install -r requirements.txt && .venv/bin/python manage.py migrate
-&& .venv/bin/python manage.py collectstatic --noinput && sudo systemctl restart jbw`.
+Updating: `git push prod main`, then `ssh 23.94.179.21 'bash ~/jbw-portfolio/deploy/update.sh'`.
+
+That script does a full restart rather than a SIGHUP reload on purpose: gunicorn reloads code on
+SIGHUP but keeps the environment it started with, so edits to `.env` would otherwise be ignored
+while appearing to have worked.
 
 After DNS points at the server: `sudo certbot --nginx -d josephbochettowalsh.com -d www.josephbochettowalsh.com`.
 
